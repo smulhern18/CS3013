@@ -1,14 +1,17 @@
 CC=gcc
 CFLAGS=-I.
-DEPS = helloworld.h
-OBJ = helloworld.o
+DEPS = prolific.h generation.h
+PROLIFIC_OBJ = prolific.o
+GENERATION_OBJ = generation.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-helloworld: $(OBJ)
+prolific: $(PROLIFIC_OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
-	make clean
+
+generation: $(GENERATION_OBJ)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean
 
