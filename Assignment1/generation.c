@@ -33,22 +33,22 @@ int main(int argc, char** argv) {
     pid_t childProcess;
     int status;
 
-        restart:
-        parentId = (int) getpid();
-        childProcess = fork();
-        if (parentId == (int) getpid()) {
-            printf("[Parent, PID: %d]: I am waiting for PID %d to finish\n", parentId, (int) childProcess);
-            waitpid(childProcess, &status, WUNTRACED | WCONTINUED);
-            printf("[Parent, PID: %d]: Child %d finished with status code %d. I can exit now\n", parentId, (int) childProcess, WEXITSTATUS(status));
-            exit(WEXITSTATUS(status)+1);
+    restart:
+    parentId = (int) getpid();
+    childProcess = fork();
+    if (parentId == (int) getpid()) {
+        printf("[Parent, PID: %d]: I am waiting for PID %d to finish\n", parentId, (int) childProcess);
+        waitpid(childProcess, &status, WUNTRACED | WCONTINUED);
+        printf("[Parent, PID: %d]: Child %d finished with status code %d. I can exit now\n", parentId, (int) childProcess, WEXITSTATUS(status));
+        exit(WEXITSTATUS(status)+1);
+    } else {
+        sleep(1);
+        printf("    [Child, PID: %d]: I was called with descendent count = %d. I'll have %d descendents\n", (int) getpid(), descendentAmount, descendentAmount-1);
+        if (descendentAmount > 1) {
+            descendentAmount--;
+            goto restart;
         } else {
-            sleep(1);
-            printf("    [Child, PID: %d]: I was called with descendent count = %d. I'll have %d descendents\n", (int) getpid(), descendentAmount, descendentAmount-1);
-            if (descendentAmount > 1) {
-                descendentAmount--;
-                goto restart;
-            } else {
-                exit(0);
-            }
+            exit(0);
         }
+    }
 }
