@@ -8,10 +8,10 @@ FO_OBJ = fedOops.o
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 summerSpectacular: $(SS_OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CC) -pthread -o $@ $^ $(CFLAGS) $(LIBS)
 
 fedOops: $(FO_OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CC) -pthread -o $@ $^ $(CFLAGS) $(LIBS)
 
 all:
 	make summerSpectacular
