@@ -36,24 +36,28 @@ int main(int argc, char** argv) {
                     break;
             }
             buffer[2] = NULL;
-            execvp("./slug", buffer);
-            exit(0);
+            execv("./slug", buffer);
         } else {
             childProcesses[i] = childProcess;
         }
     }
-    int status = 1;
     while (statuses[0] || statuses[1] || statuses[2] || statuses[3]) {
         for (i = 0; i < 4; i++) {
+            int status = -1;
             waitpid(childProcesses[i], &status, WNOHANG);
-            if (WEXITSTATUS(status)) {
-                printf("Child %d has crossed the finishline!\n", i);
+            if (WIFEXITED(status)) {
+                printf("Child %d has crossed the finishline!\n", (int)childProcesses[i]);
                 statuses[i] = 0;
-            } else {
-                printf("Process %d is status %d\n", (int)childProcesses[i], WEXITSTATUS(status));
-                status = 1;
             }
         }
+
+        printf("The Current Slugs racing are: ");
+        for (i = 0; i < 4; i++) {
+            if (statuses[i] != 0) {
+                printf("%d ", (int)childProcesses[i]);
+            }
+        }
+        printf("\n");
         usleep(250000);
     }
     printf("All Processes have finished!\n");

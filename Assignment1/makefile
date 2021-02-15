@@ -23,6 +23,7 @@ slug: $(SLUG_OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 slugrace: $(SLUG_RACE_OBJ)
+	make slug
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 all:
