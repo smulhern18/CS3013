@@ -90,6 +90,9 @@ void runThread(struct Performer performer) {
                 case JUGGLER:
                     location = 1;
                     break;
+                case EMPTY:
+                    location = 0;
+                    break;
             }
             pthread_cond_wait(&styleConditions[location], 0);
         }
