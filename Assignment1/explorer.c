@@ -54,11 +54,10 @@ int main(int argc, char** argv) {
                 location = "/bin";
                 break;
         }
-
+        chdir(location);
         childProcess = fork();
 
         if (childProcess == 0) {
-            chdir(location);
             printf("Current Reported Directory: %s\n", location);
             printf("    [Child, PID: %d]: Executing 'ls -alh' command...\n", (int) getpid());
             char** buffer = (char**) calloc(sizeof(calloc(sizeof(char), 8)), 3);
@@ -71,7 +70,7 @@ int main(int argc, char** argv) {
             int status = -1;
             printf("[Parent]: I am waiting for Child %d to finish\n", (int) childProcess);
             waitpid(childProcess, &status, WUNTRACED | WCONTINUED);
-            printf("[Parent, PID: %d]: Child %d finished with status code %d. I can exit now\n", (int) getpid(), (int) childProcess, WEXITSTATUS(status));
+            printf("[Parent, PID: %d]: Child %d finished with status code %d. I can continue now\n", (int) getpid(), (int) childProcess, WEXITSTATUS(status));
         }
 
         fileLocation = rand() % 6;

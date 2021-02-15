@@ -32,6 +32,7 @@ int main(int argc, char** argv) {
 
     char *buff = (char *) calloc(sizeof(char), 256);
     fgets(buff, 256, file);
+    printf("I am process %d, Slug %c\n", (int)getpid(), argv[1][0]);
 
     // Convert seed from char array to integer
     int seed = atoi(buff);
@@ -53,13 +54,13 @@ int main(int argc, char** argv) {
         buffer[1] = "-d";
         buffer[2] = "--fulltimes";
         buffer[3] = NULL;
-        exit(execvp("last", buffer));
+        execvp("last", buffer);
     } else {
         char** buffer = (char**) calloc(sizeof(calloc(sizeof(char), 16)), 3);
         buffer[0] = "id";
         buffer[1] = "-u";
         buffer[2] = NULL;
-        exit(execvp("id", buffer));
+        execvp("id", buffer);
     }
 }
 
