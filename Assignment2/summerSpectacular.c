@@ -79,14 +79,26 @@ void runThread(struct Performer performer) {
             perform(performer);
             exitStage(performer, stagePosition);
         } else {
-            sleep();
+            int location = -1;
+            switch (performer.style) {
+                case SOLOIST:
+                    location = 2;
+                    break;
+                case DANCER:
+                    location = 0;
+                    break;
+                case JUGGLER:
+                    location = 1;
+                    break;
+            }
+            pthread_cond_wait(&styleConditions[location], 0);
         }
     }
 }
 
 int checkStage(struct Performer performer) {
     if (currentPerformance == performer.style) {
-        if () {
+        if (1 != 2) {
 
         }
     }
@@ -95,7 +107,7 @@ int checkStage(struct Performer performer) {
 
 int checkStatus(struct Performer performer) {
 
-    return 0;
+    return performer.ready;
 }
 
 void perform(struct Performer performer) {
