@@ -94,7 +94,8 @@ void runThread(struct Performer performer) {
                     location = 0;
                     break;
             }
-            pthread_cond_wait(&styleConditions[location], 0);
+		pthread_mutex_t mutexLocation = PTHREAD_MUTEX_INITIALIZER;
+            pthread_cond_wait(&styleConditions[location], &mutexLocation);
         }
     }
 }
