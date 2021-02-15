@@ -6,10 +6,10 @@
 #define ASSIGNMENT2_SUMMERSPECTACULAR_H
 
 enum Style {
-    EMPTY,
-    DANCER,
-    JUGGLER,
-    SOLOIST
+    EMPTY = 0,
+    DANCER = 1,
+    JUGGLER = 2,
+    SOLOIST = 3
 };
 
 struct Performer {
@@ -20,11 +20,11 @@ struct Performer {
     int currentLocation;
 };
 
-void start(struct Performer performer);
+void runThread(struct Performer performer);
 int checkStage(struct Performer performer);
 int checkStatus(struct Performer performer);
 void perform(struct Performer performer);
-void enter(struct Performer performer);
-void exitStage(struct Performer performer);
+void enter(struct Performer performer, int stagePosition);
+void exitStage(struct Performer performer, int stagePosition);
 
 #endif //ASSIGNMENT2_SUMMERSPECTACULAR_H

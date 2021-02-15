@@ -14,19 +14,20 @@ struct Performer* allPerformers;
 pthread_t* allThreads;
 
 // represents the 4 places on the stage
-pthread_mutex_t stage[4] = {0,0,0,0};
+pthread_mutex_t stage[4] = {PTHREAD_MUTEX_INITIALIZER,
+                            PTHREAD_MUTEX_INITIALIZER,
+                            PTHREAD_MUTEX_INITIALIZER,
+                            PTHREAD_MUTEX_INITIALIZER};
 
 enum Style currentPerformance = EMPTY;
+pthread_cond_t styleConditions[3] = {PTHREAD_COND_INITIALIZER,
+                                     PTHREAD_COND_INITIALIZER,
+                                     PTHREAD_COND_INITIALIZER};
 
 int main(int argc, char** argv) {
 
     allPerformers = (struct Performer*) calloc(sizeof(struct Performer), 25);
     allThreads = (pthread_t*) calloc(sizeof(pthread_t), 25);
-
-    pthread_mutex_init(&stage[0], NULL);
-    pthread_mutex_init(&stage[1], NULL);
-    pthread_mutex_init(&stage[2], NULL);
-    pthread_mutex_init(&stage[3], NULL);
 
     // Create all the performers in the array
     for (int i = 0; i < 25; i++) {
@@ -57,7 +58,7 @@ int main(int argc, char** argv) {
     }
 
     for (int i = 0; i < 25; i++) {
-        pthread_create(&allThreads[i], NULL, (void *) start, &allPerformers[i]);
+        pthread_create(&allThreads[i], NULL, (void *) runThread, &allPerformers[i]);
         printf("Created performer %d\n", i+1);
     }
 
@@ -70,12 +71,25 @@ int main(int argc, char** argv) {
     exit(0);
 }
 
-void start(struct Performer performer) {
-    checkStage(performer);
+void runThread(struct Performer performer) {
+    while(1){
+        int stagePosition = checkStage(performer);
+        if (stagePosition && checkStatus(performer)) {
+            enter(performer, stagePosition);
+            perform(performer);
+            exitStage(performer, stagePosition);
+        } else {
+            sleep();
+        }
+    }
 }
 
 int checkStage(struct Performer performer) {
+    if (currentPerformance == performer.style) {
+        if () {
 
+        }
+    }
     return 0;
 }
 
@@ -88,10 +102,11 @@ void perform(struct Performer performer) {
     sleep(performer.performanceLength);
 }
 
-void enter(struct Performer performer) {
-
+void enter(struct Performer performer, int stagePosition) {
+    performer.currentLocation = 1;
+    pthread_mutex_lock(&stage[stagePosition]);
 }
 
-void exitStage(struct Performer performer) {
-
+void exitStage(struct Performer performer, int stagePosition) {
+    performer.currentLocation = 0;
 }
