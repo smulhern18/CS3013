@@ -21,6 +21,7 @@ struct Performer {
     int performanceLength;
     int ready;
     int currentLocation;
+    int threadNumber;
 };
 
 void runThread(struct Performer* performer);

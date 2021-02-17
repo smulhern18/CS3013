@@ -1,5 +1,5 @@
 //
-// Created by Sullivan Mulhern on 2/13/21.
+// Created by Sullivan Mulhern 2/13/21.
 //
 
 #include "summerSpectacular.h"
@@ -13,6 +13,7 @@
 // Represents all the threads
 struct Performer* allPerformers;
 pthread_t* allThreads;
+pthread_mutex_t allMutexes[25];
 
 int runThreads = 1;
 
@@ -24,6 +25,8 @@ int currentPerformers = 0;
 pthread_mutex_t emptySpot;
 
 enum Style currentPerformance = EMPTY;
+
+
 pthread_cond_t styleConditions[3] = {PTHREAD_COND_INITIALIZER,
                                      PTHREAD_COND_INITIALIZER,
                                      PTHREAD_COND_INITIALIZER};
@@ -38,6 +41,9 @@ int main(int argc, char** argv) {
     pthread_mutex_init(&stage[2], NULL);
     pthread_mutex_init(&stage[3], NULL);
     pthread_mutex_init(&emptySpot, NULL);
+    for (int i = 0; i < 25; i++) {
+        pthread_mutex_init(&allMutexes[i], NULL);
+    }
 
     // Create all the performers in the array
     for (int i = 0; i < 25; i++) {
@@ -46,6 +52,7 @@ int main(int argc, char** argv) {
         allPerformers[i].performanceLength = rand()%5;
         allPerformers[i].ready = 0;
         allPerformers[i].currentLocation = -1;
+        allPerformers[i].threadNumber = i;
 
         char* name = (char*) calloc(sizeof(char), 32);
         if (i < 15) {
@@ -97,6 +104,22 @@ void runThread(struct Performer* performer) {
             exitStage(*performer, stagePosition);
             pthread_mutex_unlock(&emptySpot);
 
+            int location = -1;
+            switch (performer->style) {
+                case DANCER:
+                    location = 1;
+                    break;
+                case JUGGLER:
+                    location = 2;
+                    break;
+                case SOLOIST:
+                    location = 0;
+                    break;
+                case EMPTY:
+                    location = 0;
+                    break;
+            }
+            pthread_cond_signal(&styleConditions[location]);
             sleep(performer->performanceLength*3);
         } else {
             int location = -1;
@@ -114,7 +137,8 @@ void runThread(struct Performer* performer) {
                     location = 2;
                     break;
             }
-            pthread_cond_wait(&styleConditions[location], &emptySpot);
+            pthread_cond_wait(&styleConditions[location], &allMutexes[performer->threadNumber]);
+            pthread_mutex_unlock(&allMutexes[performer->threadNumber]);
         }
     }
 }
@@ -143,7 +167,7 @@ void perform(struct Performer performer) {
 void enterStage(struct Performer performer, int stagePosition) {
     performer.currentLocation = ON_STAGE;
     currentPerformers++;
-    if (currentPerformers >= 1) {
+    if (currentPerformers == 1) {
         currentPerformance = performer.style;
     }
     if (performer.style != SOLOIST) {
@@ -160,7 +184,7 @@ void enterStage(struct Performer performer, int stagePosition) {
                 styleNotify = 2;
                 break;
         }
-        pthread_cond_signal(&styleConditions[styleNotify]);
+        pthread_cond_broadcast(&styleConditions[styleNotify]);
     } else {
         pthread_mutex_lock(&stage[0]);
         pthread_mutex_lock(&stage[1]);
@@ -189,10 +213,10 @@ void exitStage(struct Performer performer, int stagePosition) {
     if (currentPerformers == 0 || rand()%50 == 25) {
         switch (performer.style) {
             case DANCER:
-                currentPerformance = SOLOIST;
+                currentPerformance = JUGGLER;
                 break;
             case JUGGLER:
-                currentPerformance = JUGGLER;
+                currentPerformance = SOLOIST;
                 break;
             case SOLOIST:
                 currentPerformance = DANCER;
