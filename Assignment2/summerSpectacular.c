@@ -253,19 +253,6 @@ int enterStage(struct Performer performer) {
 
         if (performer.style != SOLOIST) {
             stage[openSpot] = FULL_SPOT;
-            int styleNotify;
-            switch (performer.style) {
-                case DANCER:
-                    styleNotify = 0;
-                    break;
-                case JUGGLER:
-                    styleNotify = 1;
-                    break;
-                case EMPTY:
-                default:
-                    styleNotify = 2;
-                    break;
-            }
         } else {
             currentPerformers+=3;
             stage[0] = FULL_SPOT;
