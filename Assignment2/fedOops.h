@@ -4,8 +4,6 @@
 #ifndef ASSIGNMENT2_FEDOOPS_H
 #define ASSIGNMENT2_FEDOOPS_H
 
-#include <pthread.h>
-#include <semaphore.h>
 
 enum StationName {
     WEIGH = 0,
@@ -20,11 +18,7 @@ struct Team {
   int size;
 };
 
-struct Station {
-  sem_t status;
-  pthread_t workerThread;
-  char* name;
-};
+
 struct Package {
     int id;
     int numInstructions;
@@ -35,7 +29,7 @@ struct PackageQueue {
     struct Package* packages;
     int size;
     int top;
-}
+};
 
 
 
