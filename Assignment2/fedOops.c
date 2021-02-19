@@ -6,15 +6,26 @@ TODO:
 Make teams not fixed to stations
 
 */
-
+#include "fedOops.h"
+#include <sys/types.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include <unistd.h>
-#include "fedOops.h"
+#include <stdlib.h>
 
-char* stationLookup[4] = {"Weigh", "Barcode", "X-Ray", "Jostle"};
-char* teamLookup[4] = {"Red", "Blue", "Green", "Yellow"};
+FILE *seedFile;
+int seed;
+int packageIdCounter;
+
+struct Station {
+  sem_t status;
+  pthread_t workerThread;
+  char* name;
+};
+
+char stationLookup[4][7] = {"Weigh", "Barcode", "X-Ray", "Jostle"};
+char teamLookup[4][6] = {"Red", "Blue", "Green", "Yellow"};
 sem_t stationsStatus[4];
 
 pthread_t stations[4];
@@ -40,16 +51,16 @@ int nextWorker(struct Team* team){
 // gives the list of indexes in conveyorStatus and conveyorContent
 // which correspond to station
 void getConveyors(int station, int* outputLoc){
-  int[3] list;
-  idx = 0;
+  int list[3];
+  int idx = 0;
 
   for(int i = 0; i < 3; i++){
     for(int j = 1; j < 4; j++){
       if((i == station || j == station) && i != j){
         if(i==0){
-          list[idx] = i+j-1
+          list[idx] = i+j-1;
         } else{
-          list[idx] = i+j
+          list[idx] = i+j;
         }
         idx++;
       }
@@ -60,11 +71,11 @@ void getConveyors(int station, int* outputLoc){
 // gives the list of indexes in workerStatus and workerContent
 // which care not the worker of station
 void getWaitingWorkers(int station, int* outputLoc) {
-  int[3] list;
-  idx = 0;
+  int list[3];
+  int idx = 0;
   for(int i = 0; i < 4; i++){
       if(i != station){
-        list[idx] = i
+        list[idx] = i;
         idx++;
       }
   }
@@ -72,10 +83,9 @@ void getWaitingWorkers(int station, int* outputLoc) {
 }
 
 
-
 void* processPackage(void* args){
   struct Package* package = NULL;
-  int i = (int) args; //station id
+  int i = *((int*)args); //station id
 
   //lock station (worker is busy)
   sem_wait(&stationsStatus[i]);
@@ -112,17 +122,17 @@ void* processPackage(void* args){
   }
 
   //check to see if done
-  while(pendingPackages[i].size > 0 || package){
+  while(pendingPackages.size > 0 || package){
     if(!package){ //incoming package from other station
       sem_wait(&packageQueueStatus); //get in line for package
       //pop package from queue
-      package = pendingPackages[i].packages[pendingPackages[i].top];
-      pendingPackages[i].top++;
-      pendingPackages[i].size--;
+      package = &pendingPackages.packages[pendingPackages.top];
+      pendingPackages.top++;
+      pendingPackages.size--;
       sem_post(&packageQueueStatus); //get out of line
       printf("Worker %s_%d picks up package %d.\n", teams[i].color, teams[i].currentWorker, package->id);
       if(package->instructions[package->nextInstruction] != i){
-        sem_wait(&workerStatus[i])
+        sem_wait(&workerStatus[i]);
         workerContent[i] = package;
         sem_post(&workerStatus[i]);
         package = NULL;
@@ -136,7 +146,6 @@ void* processPackage(void* args){
         printf("Worker %s_%d is now tagging out from %s station.\n", teams[i].color, teams[i].currentWorker, stationLookup[i]);
         nextWorker(&teams[i]);
         printf("Worker %s_%d is now tagging in to %s station.\n", teams[i].color, teams[i].currentWorker, stationLookup[i]);
-        printf(" Worker .\n", teams[i].color, teams[i].currentWorker, package->id, stationLookup[i]);
         continue;
       }
       printf("Worker %s_%d returns to %s station with package %d.\n", teams[i].color, teams[i].currentWorker, stationLookup[i], package->id);
@@ -146,17 +155,17 @@ void* processPackage(void* args){
     sleep(2);
     package->nextInstruction++;
     if (package->nextInstruction >= package->numInstructions){
-      printf("All instructions completed on package %d.\n", package->id)
+      printf("All instructions completed on package %d.\n", package->id);
       printf("Worker %s_%d put package %d on the delivery truck.", teams[i].color, teams[i].currentWorker, package->id);
     }
     else{
       //gets the proper index between this station and next station
       int conveyorIdx;
       conveyorIdx = i + package->instructions[package->nextInstruction];
-      if((i == 0 || package->instructions[package->nextInstruction] == 0){
+      if(i == 0 || package->instructions[package->nextInstruction] == 0){
         conveyorIdx--;
       }
-      sem_wait(&conveyorStatus[i])
+      sem_wait(&conveyorStatus[i]);
       conveyorContent[i] = package;
       sem_post(&conveyorStatus[i]);
       package = NULL;
@@ -165,7 +174,7 @@ void* processPackage(void* args){
       while (sem_value > 0) { //wait until package is delivered to proper location
           sem_getvalue(&conveyorStatus[i], &sem_value);
       }
-      printf("Worker %s_%d put package %d on the conveyor belt to %s.", teams[i].color, teams[i].currentWorker, package->id);
+      printf("Worker %s_%d put package %d on the conveyor belt to %s.", teams[i].color, teams[i].currentWorker, package->id, stationLookup[i]);
 
     }
     sem_post(&stationsStatus[i]); //unlock station
@@ -174,27 +183,69 @@ void* processPackage(void* args){
 }
 
 int main(){
+
+  seedFile = fopen("seed.txt", "r");
+  fscanf(seedFile, "%d", &seed);
+  srand(seed);
+  packageIdCounter = 1;
+  int n = 10;
+
+  pendingPackages.size = n;
+  pendingPackages.top = 0;
+  pendingPackages.packages = (struct Package *) malloc (n * sizeof(struct Package));
+  //generate random sets of instructions
+  for (int i = 0; i < n; i++){
+    int len = rand() % 4 + 1; //get number of instructions
+
+    //generate randomly ordered instructions list (6 swaps)
+    int seqInstructions[4] = {0, 1, 2, 4};
+    for (int j = 0; j < rand() % 6; j++){
+      int k = rand() % 4;
+      int l = rand() % 4;
+      int tmp = seqInstructions[k];
+      seqInstructions[k] = seqInstructions[l];
+      seqInstructions[l] = tmp;
+    }
+    int instructions[len]; //setup instructions list
+    for(int j = 0; j < len; j++){
+      instructions[j] = seqInstructions[j];
+    }
+
+    struct Package* p = & (struct Package) {.id = packageIdCounter, .numInstructions = len, .nextInstruction = 0, .instructions = instructions};
+
+    pendingPackages.packages[i] = *p;
+    packageIdCounter++;
+  }
+
+
   for(int i = 0; i < 4; i++){ //init teams
     teams[i].color = teamLookup[i];
-    teams[i].numWorkers = 10;
+    teams[i].size = 10;
     teams[i].currentWorker = 0;
   }
   sem_init(&packageQueueStatus, 0, 1);
-  printf("Starting shift...")
+  printf("Starting shift...");
   for(int i = 0; i < 4; i++){ //init stations
     sem_init(&stationsStatus[i], 0, 1);
     printf("%s team assigned to %s station", teams[i].color, stationLookup[i]);  //TODO change so that team isnt fixed to station
   }
   for(int i = 0; i < 4; i++){//init threads
-    pthread_create(&stations[i], NULL, processPackage, (void*) i);
-  }
-  while(){
-    //
+    void *p = &i;
+    pthread_create(&stations[i], NULL, processPackage, p);
   }
   for(int i = 0; i < 4; i++){
-    pthread_join(&stations[i], NULL);
+    pthread_join(stations[i], NULL);
   }
+  for(int i = 0; i < 4; i++){
+  sem_destroy(&stationsStatus[i]);
+  sem_destroy(&workerStatus[i]);
+  }
+  for(int i = 0; i < 6; i++){
+  sem_destroy(&conveyorStatus[i]);
+  }
+  sem_destroy(&packageQueueStatus);
 
+  free(pendingPackages.packages);
 
   return 0;
 }
