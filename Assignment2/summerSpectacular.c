@@ -18,29 +18,35 @@ pthread_mutex_t allMutexes[25];
 int runThreads = 1;
 
 // represents the 4 places on the stage
-pthread_mutex_t stage[4];
+int stage[4];
 
 int currentPerformers = 0;
 
-pthread_mutex_t emptySpot;
+pthread_mutex_t stageLock;
+pthread_mutex_t waitingLock;
 
 enum Style currentPerformance = EMPTY;
-
 
 pthread_cond_t styleConditions[3] = {PTHREAD_COND_INITIALIZER,
                                      PTHREAD_COND_INITIALIZER,
                                      PTHREAD_COND_INITIALIZER};
+
+int jugglerWaiting = 0;
+int dancerWaiting = 0;
+int soloistWaiting = 0;
 
 int main(int argc, char** argv) {
 
     allPerformers = (struct Performer*) calloc(sizeof(struct Performer), 25);
     allThreads = (pthread_t*) calloc(sizeof(pthread_t), 25);
 
-    pthread_mutex_init(&stage[0], NULL);
-    pthread_mutex_init(&stage[1], NULL);
-    pthread_mutex_init(&stage[2], NULL);
-    pthread_mutex_init(&stage[3], NULL);
-    pthread_mutex_init(&emptySpot, NULL);
+    stage[0] = EMPTY_SPOT;
+    stage[1] = EMPTY_SPOT;
+    stage[2] = EMPTY_SPOT;
+    stage[3] = EMPTY_SPOT;
+    pthread_mutex_init(&stageLock, NULL);
+    pthread_mutex_init(&waitingLock, NULL);
+
     for (int i = 0; i < 25; i++) {
         pthread_mutex_init(&allMutexes[i], NULL);
     }
@@ -49,7 +55,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 25; i++) {
         strncpy(allPerformers[i].name, "wak", 4);
         allPerformers[i].style = EMPTY;
-        allPerformers[i].performanceLength = rand()%5;
+        allPerformers[i].performanceLength = rand()%5 + 2;
         allPerformers[i].ready = 0;
         allPerformers[i].currentLocation = -1;
         allPerformers[i].threadNumber = i;
@@ -88,66 +94,128 @@ void runThread(struct Performer* performer) {
     sleep(rand()%10);
     performer->ready = 1;
     while(runThreads){
-        int stagePosition = checkStage(*performer);
-        printf("%s stage status %d\n", performer->name, stagePosition);
-        if ((stagePosition != -1) && checkStatus(*performer)) {
-            performer->ready = 0;
 
-            pthread_mutex_lock(&emptySpot);
-            enterStage(*performer, stagePosition);
-            pthread_mutex_unlock(&emptySpot);
+        pthread_mutex_lock(&stageLock);
+        int stagePosition = enterStage(*performer);
+        if (stagePosition != -1) {
+            pthread_mutex_unlock(&stageLock);
 
+            if (currentPerformers < 4) {
+                int style = -1;
+                switch (currentPerformance) {
+                    case DANCER:
+                        style = 0;
+                        break;
+                    case JUGGLER:
+                        style = 1;
+                        break;
+                    case SOLOIST:
+                        style = 2;
+                        break;
+                    case EMPTY:
+                        //whatever
+                        break;
+                }
+                pthread_cond_signal(&styleConditions[style]);
+            }
 
             perform(*performer);
 
-            pthread_mutex_lock(&emptySpot);
+            pthread_mutex_lock(&stageLock);
             exitStage(*performer, stagePosition);
-            pthread_mutex_unlock(&emptySpot);
+            pthread_mutex_unlock(&stageLock);
 
-            int location = -1;
-            switch (performer->style) {
-                case DANCER:
-                    location = 1;
-                    break;
-                case JUGGLER:
-                    location = 2;
-                    break;
-                case SOLOIST:
-                    location = 0;
-                    break;
-                case EMPTY:
-                    location = 0;
-                    break;
+            if (currentPerformance == EMPTY) {
+                pthread_mutex_lock(&stageLock);
+                enum Style mostWaiting = max();
+                currentPerformance = mostWaiting;
+                int style = -1;
+                switch (mostWaiting) {
+                    case DANCER:
+                        style = 0;
+                        break;
+                    case JUGGLER:
+                        style = 1;
+                        break;
+                    case SOLOIST:
+                        style = 2;
+                        break;
+                    case EMPTY:
+                        //whatever
+                        break;
+                }
+                pthread_cond_signal(&styleConditions[style]);
+                pthread_mutex_unlock(&stageLock);
             }
-            pthread_cond_signal(&styleConditions[location]);
-            sleep(performer->performanceLength*3);
+
+            sleep(performer->performanceLength*6);
         } else {
-            int location = -1;
+            pthread_mutex_unlock(&stageLock);
+            if (currentPerformers == 0) {
+                enum Style mostWaiting = max();
+                int style = -1;
+                switch (performer->style) {
+                    case DANCER:
+                        style = 0;
+                        break;
+                    case JUGGLER:
+                        style = 1;
+                        break;
+                    case SOLOIST:
+                        style = 2;
+                        break;
+                    case EMPTY:
+                        //whatever
+                        break;
+                }
+                pthread_cond_broadcast(&styleConditions[style]);
+            }
+            pthread_mutex_lock(&waitingLock);
+            int style = -1;
             switch (performer->style) {
                 case DANCER:
-                    location = 0;
+                    style = 0;
+                    dancerWaiting++;
                     break;
                 case JUGGLER:
-                    location = 1;
+                    style = 1;
+                    jugglerWaiting++;
                     break;
                 case SOLOIST:
-                    location = 2;
+                    style = 2;
+                    soloistWaiting++;
                     break;
                 case EMPTY:
-                    location = 2;
+                    //whatever
                     break;
             }
-            pthread_cond_wait(&styleConditions[location], &allMutexes[performer->threadNumber]);
+            pthread_mutex_unlock(&waitingLock);
+            pthread_cond_wait(&styleConditions[style], &allMutexes[performer->threadNumber]);
+            pthread_mutex_lock(&waitingLock);
+            switch (performer->style) {
+                case DANCER:
+                    dancerWaiting--;
+                    break;
+                case JUGGLER:
+                    jugglerWaiting--;
+                    break;
+                case SOLOIST:
+                    soloistWaiting--;
+                    break;
+                case EMPTY:
+                    //whatever
+                    break;
+            }
+            pthread_mutex_unlock(&waitingLock);
             pthread_mutex_unlock(&allMutexes[performer->threadNumber]);
         }
     }
 }
 
 int checkStage(struct Performer performer) {
-        if (currentPerformance == performer.style || currentPerformance == EMPTY) {
-            for (int i =0; i < 4; i++) {
-                int status = pthread_mutex_trylock(&stage[i]);
-                if (status == 0 || status == 35) {
+        if ((currentPerformance == performer.style || currentPerformance == EMPTY) && currentPerformers < 4) {
+            for (int i = 0; i < 4; i++) {
+                if (!stage[i]) {
                     return i;
                 }
             }
@@ -160,67 +228,99 @@ int checkStatus(struct Performer performer) {
 }
 
 void perform(struct Performer performer) {
-    sleep(performer.performanceLength);
     printf("%s is Performing!\n", performer.name);
+    sleep(performer.performanceLength);
 }
 
-void enterStage(struct Performer performer, int stagePosition) {
-    performer.currentLocation = ON_STAGE;
-    currentPerformers++;
-    if (currentPerformers == 1) {
-        currentPerformance = performer.style;
-    }
-    if (performer.style != SOLOIST) {
-        int styleNotify;
-        switch (performer.style) {
-            case DANCER:
-                styleNotify = 0;
+int enterStage(struct Performer performer) {
+
+    int openSpot = -1;
+
+    if ((currentPerformance == performer.style || currentPerformance == EMPTY) && currentPerformers < 4) {
+        for (int i = 0; i < 4; i++) {
+            if (!stage[i]) {
+                openSpot = i;
                 break;
-            case JUGGLER:
-                styleNotify = 1;
-                break;
-            case EMPTY:
-            default:
-                styleNotify = 2;
-                break;
+            }
         }
-        pthread_cond_broadcast(&styleConditions[styleNotify]);
+    }
+
+    if (openSpot != -1) {
+        currentPerformers++;
+        if (currentPerformance == EMPTY) {
+            currentPerformance = performer.style;
+        }
+
+        if (performer.style != SOLOIST) {
+            stage[openSpot] = FULL_SPOT;
+            int styleNotify;
+            switch (performer.style) {
+                case DANCER:
+                    styleNotify = 0;
+                    break;
+                case JUGGLER:
+                    styleNotify = 1;
+                    break;
+                case EMPTY:
+                default:
+                    styleNotify = 2;
+                    break;
+            }
+        } else {
+            currentPerformers+=3;
+            stage[0] = FULL_SPOT;
+            stage[1] = FULL_SPOT;
+            stage[2] = FULL_SPOT;
+            stage[3] = FULL_SPOT;
+        }
+        printf("%s is entering stage position %d\n", performer.name, openSpot+1);
+
+        return openSpot;
     } else {
-        pthread_mutex_lock(&stage[0]);
-        pthread_mutex_lock(&stage[1]);
-        pthread_mutex_lock(&stage[2]);
-        pthread_mutex_lock(&stage[3]);
+        return -1;
     }
-    if (currentPerformance != performer.style) {
-        currentPerformance = performer.style;
-    }
-    printf("%s is entering stage position %d\n", performer.name, stagePosition+1);
 }
 
 void exitStage(struct Performer performer, int stagePosition) {
     performer.currentLocation = OFF_STAGE;
     if (performer.style != SOLOIST) {
-        pthread_mutex_unlock(&stage[stagePosition]);
+        stage[stagePosition] = EMPTY_SPOT;
     } else {
-        pthread_mutex_unlock(&stage[0]);
-        pthread_mutex_unlock(&stage[1]);
-        pthread_mutex_unlock(&stage[2]);
-        pthread_mutex_unlock(&stage[3]);
+        stage[0] = EMPTY_SPOT;
+        stage[1] = EMPTY_SPOT;
+        stage[2] = EMPTY_SPOT;
+        stage[3] = EMPTY_SPOT;
+        currentPerformers-=3;
     }
     printf("%s is now exiting stage positon %d!\n", performer.name, stagePosition+1);
 
     currentPerformers--;
-    if (currentPerformers == 0 || rand()%50 == 25) {
+    if (currentPerformers == 0) {
+        currentPerformance = EMPTY;
+    } else {
+        int style;
         switch (performer.style) {
             case DANCER:
-                currentPerformance = JUGGLER;
+                style = 0;
                 break;
             case JUGGLER:
-                currentPerformance = SOLOIST;
+                style = 1;
                 break;
-            case SOLOIST:
-                currentPerformance = DANCER;
+            case EMPTY:
+            default:
+                style = 2;
                 break;
         }
+        pthread_cond_signal(&styleConditions[style]);
+    }
+}
+
+enum Style max() {
+    if (soloistWaiting >= 1) {
+        return SOLOIST;
+    } else if (jugglerWaiting > dancerWaiting/2 || jugglerWaiting == 8){
+        return JUGGLER;
+    } else {
+        return DANCER;
     }
 }
