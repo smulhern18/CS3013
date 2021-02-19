@@ -22,3 +22,5 @@ all:
 
 clean:
 	rm -f *.o
+	rm summerSpectacular
+	rm fedOops
