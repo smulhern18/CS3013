@@ -1,0 +1,21 @@
+For Problem 1, We decided to use the Mutex and condition variables in order to solve this problem.
+
+We only use 2 Mutexes, one which locks the stage, so that a performer (thread) can go onto the stage, or exit the stage.
+The second allows for the threads to increment or decrement their specific type to show that they are waiting to go \
+onstage.
+
+When going to check the stage, the thread first locks the stage mutex, then checks to see if the performance style is
+compatible and if the current performers is less than 4. If this check fails, the enterStage function returns -1. If
+this check passes, then the thread increments the currentPerformers int, then denotes the open spot it takes as full,
+then returns the spot it took.
+
+Once the enterStage function returns, it is put into an if statement, if the value returned is not -1, the thread then
+signals for another thread to join them on stage, performs, then exits the stage. Exiting the stage consists of changing
+the spot flag to EMPTY_SPOT, then decrementing the current performers by one and signalling for another performer to
+enter. Finally, if the stage is empty, the thread grabs the stage mutex, signals the next type of performers to start
+going onto stage, and unlocks the mutex. Finally the thread takes a nap for OSHA and Union reasons.
+
+if the if statement checking the return value of enterStage is -1, then the thread determines what condition variable
+to listen to, increments the variable telling other threads how many are waiting, and finally takes a nap until another
+thread wakes it up. Once the thread is woken, the thread decrements the variable telling other threads how many of the
+type is waiting, then starts in the while loop again.
