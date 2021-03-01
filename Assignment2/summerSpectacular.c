@@ -2,6 +2,8 @@
 // Created by Sullivan Mulhern on 2/13/21.
 //
 
+// What 
+
 #include "summerSpectacular.h"
 #include <pthread.h>
 #include <stdlib.h>
@@ -62,7 +64,7 @@ int main(int argc, char** argv) {
         printf("Created performer %d\n", i+1);
     }
 
-    sleep(120);
+    sleep(10);
     for (int i = 0; i < 25; i++) {
         pthread_join(allThreads[i], NULL);
         printf("Destroyed performer %d\n", i+1);
