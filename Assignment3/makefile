@@ -3,11 +3,8 @@ CFLAGS=-I.
 DEPS = goatmalloc.h
 OBJ = test_goatmalloc.o, goatmalloc.o
 
-%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
-
-test_goatmalloc: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+test_goatmalloc:
+	gcc test_goatmalloc.c goatmalloc.c -o test_goatmalloc
 
 all:
 	make test_goatmalloc
