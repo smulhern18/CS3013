@@ -92,7 +92,7 @@ extern void* walloc(size_t size){
                 nextNode->is_free = FREE;
                 nextNode->bwd = (struct __node_t *) &currentNode;
                 currentNode->fwd = &nextNode;
-                bytesMoved += sizeof(node_t);
+                bytesMoved += (sizeof(node_t)+size);
             } else {
                 // don't split
                 currentNode->is_free = TAKEN;
