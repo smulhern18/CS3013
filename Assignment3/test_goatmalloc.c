@@ -134,7 +134,8 @@ void test_allocation_withsplits(){
 
   // Test: First allocation causes split. Check that the header is in the
   // correct place, has the correct field values, and that chunks were split
-  // correctly 
+  // correctly
+
   init(page_size);
   buff = walloc(64);
   assert(buff != NULL);
@@ -449,16 +450,16 @@ void test_free_coalescing_chains_bwd(){
 
 
 int main() {
-  //test_init_destroy();
-  //test_allocation_basic();
-  //test_free_basic();
-  //test_allocation_withsplits();
-  //test_allocationfree_placement();
+  test_init_destroy();
+  test_allocation_basic();
+  test_free_basic();
+  test_allocation_withsplits();
+  test_allocationfree_placement();
   test_free_coalescing_case1();
-  //test_free_coalescing_case2();
-  //test_free_coalescing_case3();
-  //test_free_coalescing_chains_fwd();
-  //test_free_coalescing_chains_bwd();
+  test_free_coalescing_case2();
+  test_free_coalescing_case3();
+  test_free_coalescing_chains_fwd();
+  test_free_coalescing_chains_bwd();
 
   printf("All tests passed!\n");
 }

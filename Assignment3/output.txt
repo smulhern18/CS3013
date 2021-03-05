@@ -1,0 +1,310 @@
+>> Testing initialization.
+   requested size 1 bytes
+   pageSize is 4096 bytes
+   adjusted size is 4096 bytes
+   arena starts at 0x604088
+   arena ends at 0x60c088
+   initializing header for initial free chunk
+   header size is 32 bytes
+   unmapping arena with munmap()
+   requested size 8182 bytes
+   pageSize is 4096 bytes
+   adjusted size is 8192 bytes
+   arena starts at 0x604088
+   arena ends at 0x614088
+   initializing header for initial free chunk
+   header size is 32 bytes
+   unmapping arena with munmap()
+   requested size 4096 bytes
+   pageSize is 4096 bytes
+   adjusted size is 4096 bytes
+   arena starts at 0x604088
+   arena ends at 0x60c088
+   initializing header for initial free chunk
+   header size is 32 bytes
+   unmapping arena with munmap()
+   requested size -1 bytes
+   error: requested size larger than MAX_ARENA_SIZE (2147483647)
+>> Testing allocations without the possibility to split. No Frees.
+   looking for a free chunk of >= 4096 bytes
+   requested size 4096 bytes
+   pageSize is 4096 bytes
+   adjusted size is 4096 bytes
+   arena starts at 0x604088
+   arena ends at 0x60c088
+   initializing header for initial free chunk
+   header size is 32 bytes
+   looking for a free chunk of >= 4096 bytes
+   no such free chunk can exist in the memory provided!
+   looking for a free chunk of >= 4064 bytes
+   found a free chunk of 4064 bytes with a header at 0x7fc184391000
+   0x7fc184391020 is the location of the allocated chunk!
+   looking for a free chunk of >= 1 bytes
+   unmapping arena with munmap()
+>>Testing frees without coalescing.
+   requested size 4096 bytes
+   pageSize is 4096 bytes
+   adjusted size is 4096 bytes
+   arena starts at 0x604088
+   arena ends at 0x60c088
+   initializing header for initial free chunk
+   header size is 32 bytes
+   looking for a free chunk of >= 4064 bytes
+   found a free chunk of 4064 bytes with a header at 0x7fc184391000
+   0x7fc184391020 is the location of the allocated chunk!
+   supplied pointer 0x7fc184391020
+   accessing chunk header at 0x7fc184391000
+   unmapping arena with munmap()
+>>Testing allocations with splits.
+   requested size 4096 bytes
+   pageSize is 4096 bytes
+   adjusted size is 4096 bytes
+   arena starts at 0x604088
+   arena ends at 0x60c088
+   initializing header for initial free chunk
+   header size is 32 bytes
+   looking for a free chunk of >= 64 bytes
+   found a free chunk of 4064 bytes with a header at 0x7fc184391000
+   0x7fc184391020 is the location of the allocated chunk!
+Header->size: 64
+Header->fwd: 0x7fc184391060
+Header->bwd: (nil)
+Header->is_free: 0
+Header->size: 3968
+Header->fwd: (nil)
+Header->bwd: 0x7fc184391000
+Header->is_free: 1
+   looking for a free chunk of >= 3968 bytes
+   found a free chunk of 3968 bytes with a header at 0x7fc184391060
+   0x7fc184391080 is the location of the allocated chunk!
+Header->size: 3968
+Header->fwd: (nil)
+Header->bwd: 0x7fc184391000
+Header->is_free: 0
+   unmapping arena with munmap()
+   requested size 4096 bytes
+   pageSize is 4096 bytes
+   adjusted size is 4096 bytes
+   arena starts at 0x604088
+   arena ends at 0x60c088
+   initializing header for initial free chunk
+   header size is 32 bytes
+   looking for a free chunk of >= 64 bytes
+   found a free chunk of 4064 bytes with a header at 0x7fc184391000
+   0x7fc184391020 is the location of the allocated chunk!
+   looking for a free chunk of >= 3958 bytes
+   found a free chunk of 3968 bytes with a header at 0x7fc184391060
+   0x7fc184391080 is the location of the allocated chunk!
+Header->size: 3968
+Header->fwd: (nil)
+Header->bwd: 0x7fc184391000
+Header->is_free: 0
+   unmapping arena with munmap()
+>> Testing basic allocation free placement.
+   requested size 4096 bytes
+   pageSize is 4096 bytes
+   adjusted size is 4096 bytes
+   arena starts at 0x604088
+   arena ends at 0x60c088
+   initializing header for initial free chunk
+   header size is 32 bytes
+   looking for a free chunk of >= 32 bytes
+   found a free chunk of 4064 bytes with a header at 0x7fc184391000
+   0x7fc184391020 is the location of the allocated chunk!
+Header->size: 32
+Header->fwd: 0x7fc184391040
+Header->bwd: (nil)
+Header->is_free: 0
+   looking for a free chunk of >= 32 bytes
+   found a free chunk of 4000 bytes with a header at 0x7fc184391040
+   0x7fc184391060 is the location of the allocated chunk!
+   supplied pointer 0x7fc184391020
+   accessing chunk header at 0x7fc184391000
+   looking for a free chunk of >= 32 bytes
+   found a free chunk of 32 bytes with a header at 0x7fc184391000
+   0x7fc184391020 is the location of the allocated chunk!
+   unmapping arena with munmap()
+>>Testing frees with coalescing. Case 1.
+   requested size 4096 bytes
+   pageSize is 4096 bytes
+   adjusted size is 4096 bytes
+   arena starts at 0x604088
+   arena ends at 0x60c088
+   initializing header for initial free chunk
+   header size is 32 bytes
+   looking for a free chunk of >= 64 bytes
+   found a free chunk of 4064 bytes with a header at 0x7fc184391000
+   0x7fc184391020 is the location of the allocated chunk!
+   looking for a free chunk of >= 128 bytes
+   found a free chunk of 3968 bytes with a header at 0x7fc184391060
+   0x7fc184391080 is the location of the allocated chunk!
+   looking for a free chunk of >= 3808 bytes
+   found a free chunk of 3808 bytes with a header at 0x7fc184391100
+   0x7fc184391120 is the location of the allocated chunk!
+Header->size: 64
+Header->fwd: 0x7fc184391060
+Header->bwd: (nil)
+Header->is_free: 0
+Header->size: 128
+Header->fwd: 0x7fc184391100
+Header->bwd: 0x7fc184391000
+Header->is_free: 0
+Header->size: 3808
+Header->fwd: (nil)
+Header->bwd: 0x7fc184391060
+Header->is_free: 0
+   supplied pointer 0x7fc184391020
+   accessing chunk header at 0x7fc184391000
+   supplied pointer 0x7fc184391120
+   accessing chunk header at 0x7fc184391100
+   supplied pointer 0x7fc184391080
+   accessing chunk header at 0x7fc184391060
+   Adding forward Node to the current node!
+   Adding current node to the backwards node!
+Header->size: 4064
+Header->fwd: (nil)
+Header->bwd: (nil)
+Header->is_free: 1
+   unmapping arena with munmap()
+>>Testing frees with coalescing. Case 2.
+   requested size 4096 bytes
+   pageSize is 4096 bytes
+   adjusted size is 4096 bytes
+   arena starts at 0x604088
+   arena ends at 0x60c088
+   initializing header for initial free chunk
+   header size is 32 bytes
+   looking for a free chunk of >= 64 bytes
+   found a free chunk of 4064 bytes with a header at 0x7fc184391000
+   0x7fc184391020 is the location of the allocated chunk!
+   looking for a free chunk of >= 3968 bytes
+   found a free chunk of 3968 bytes with a header at 0x7fc184391060
+   0x7fc184391080 is the location of the allocated chunk!
+Header->size: 64
+Header->fwd: 0x7fc184391060
+Header->bwd: (nil)
+Header->is_free: 0
+Header->size: 3968
+Header->fwd: (nil)
+Header->bwd: 0x7fc184391000
+Header->is_free: 0
+   supplied pointer 0x7fc184391020
+   accessing chunk header at 0x7fc184391000
+   supplied pointer 0x7fc184391080
+   accessing chunk header at 0x7fc184391060
+   Adding current node to the backwards node!
+Header->size: 4064
+Header->fwd: (nil)
+Header->bwd: (nil)
+Header->is_free: 1
+   unmapping arena with munmap()
+>>Testing frees with coalescing. Case 2.
+   requested size 4096 bytes
+   pageSize is 4096 bytes
+   adjusted size is 4096 bytes
+   arena starts at 0x604088
+   arena ends at 0x60c088
+   initializing header for initial free chunk
+   header size is 32 bytes
+   looking for a free chunk of >= 64 bytes
+   found a free chunk of 4064 bytes with a header at 0x7fc184391000
+   0x7fc184391020 is the location of the allocated chunk!
+   looking for a free chunk of >= 3968 bytes
+   found a free chunk of 3968 bytes with a header at 0x7fc184391060
+   0x7fc184391080 is the location of the allocated chunk!
+Header->size: 64
+Header->fwd: 0x7fc184391060
+Header->bwd: (nil)
+Header->is_free: 0
+Header->size: 3968
+Header->fwd: (nil)
+Header->bwd: 0x7fc184391000
+Header->is_free: 0
+   supplied pointer 0x7fc184391080
+   accessing chunk header at 0x7fc184391060
+   supplied pointer 0x7fc184391020
+   accessing chunk header at 0x7fc184391000
+   Adding forward Node to the current node!
+Header->size: 4064
+Header->fwd: (nil)
+Header->bwd: (nil)
+Header->is_free: 1
+   unmapping arena with munmap()
+>>Testing frees with coalescing chaining
+   requested size 4096 bytes
+   pageSize is 4096 bytes
+   adjusted size is 4096 bytes
+   arena starts at 0x604088
+   arena ends at 0x60c088
+   initializing header for initial free chunk
+   header size is 32 bytes
+   looking for a free chunk of >= 64 bytes
+   found a free chunk of 4064 bytes with a header at 0x7fc184391000
+   0x7fc184391020 is the location of the allocated chunk!
+   looking for a free chunk of >= 64 bytes
+   found a free chunk of 3968 bytes with a header at 0x7fc184391060
+   0x7fc184391080 is the location of the allocated chunk!
+   looking for a free chunk of >= 64 bytes
+   found a free chunk of 3872 bytes with a header at 0x7fc1843910c0
+   0x7fc1843910e0 is the location of the allocated chunk!
+   looking for a free chunk of >= 64 bytes
+   found a free chunk of 3776 bytes with a header at 0x7fc184391120
+   0x7fc184391140 is the location of the allocated chunk!
+   supplied pointer 0x7fc184391020
+   accessing chunk header at 0x7fc184391000
+   supplied pointer 0x7fc184391080
+   accessing chunk header at 0x7fc184391060
+   Adding current node to the backwards node!
+   supplied pointer 0x7fc1843910e0
+   accessing chunk header at 0x7fc1843910c0
+   Adding current node to the backwards node!
+   Adding current node to the backwards node!
+   supplied pointer 0x7fc184391140
+   accessing chunk header at 0x7fc184391120
+   Adding forward Node to the current node!
+   Adding current node to the backwards node!
+   Adding current node to the backwards node!
+   Adding current node to the backwards node!
+Header->size: 4064
+Header->fwd: (nil)
+Header->bwd: (nil)
+Header->is_free: 1
+   unmapping arena with munmap()
+>>Testing frees with coalescing chaining
+   requested size 4096 bytes
+   pageSize is 4096 bytes
+   adjusted size is 4096 bytes
+   arena starts at 0x604088
+   arena ends at 0x60c088
+   initializing header for initial free chunk
+   header size is 32 bytes
+   looking for a free chunk of >= 64 bytes
+   found a free chunk of 4064 bytes with a header at 0x7fc184391000
+   0x7fc184391020 is the location of the allocated chunk!
+   looking for a free chunk of >= 64 bytes
+   found a free chunk of 3968 bytes with a header at 0x7fc184391060
+   0x7fc184391080 is the location of the allocated chunk!
+   looking for a free chunk of >= 64 bytes
+   found a free chunk of 3872 bytes with a header at 0x7fc1843910c0
+   0x7fc1843910e0 is the location of the allocated chunk!
+   looking for a free chunk of >= 64 bytes
+   found a free chunk of 3776 bytes with a header at 0x7fc184391120
+   0x7fc184391140 is the location of the allocated chunk!
+   supplied pointer 0x7fc184391140
+   accessing chunk header at 0x7fc184391120
+   Adding forward Node to the current node!
+   supplied pointer 0x7fc1843910e0
+   accessing chunk header at 0x7fc1843910c0
+   Adding forward Node to the current node!
+   supplied pointer 0x7fc184391080
+   accessing chunk header at 0x7fc184391060
+   Adding forward Node to the current node!
+   supplied pointer 0x7fc184391020
+   accessing chunk header at 0x7fc184391000
+   Adding forward Node to the current node!
+Header->size: 4064
+Header->fwd: (nil)
+Header->bwd: (nil)
+Header->is_free: 1
+   unmapping arena with munmap()
+All tests passed!

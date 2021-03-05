@@ -25,7 +25,7 @@ extern int init(size_t size) {
         printf("   error: requested size larger than MAX_ARENA_SIZE (%d)\n", MAX_ARENA_SIZE);
         return ERR_BAD_ARGUMENTS;
     } else if (size < 1) {
-        printf("   error: requested size is negative\n");
+        printf("   error: requested size is negative or zero\n");
         return ERR_BAD_ARGUMENTS;
     }
     int pageSize = getpagesize();
@@ -76,31 +76,40 @@ extern void* walloc(size_t size){
 
     char* incrimentableArenaStart = (char*) _arena_start;
     node_t* currentNode  = _arena_start;
-    int hasSpace = 0;
+    node_t* previousNode = NULL;
     int bytesMoved = 0;
+    short hasSpace = 0;
 
-    while(currentNode != NULL && hasSpace == 0) {
-        if (currentNode->is_free == FREE && currentNode->size >= size) {
+    while(hasSpace == 0) {
+        if (currentNode->is_free == FREE) {
             printf("   found a free chunk of %d bytes with a header at %p\n", (int) currentNode->size, incrimentableArenaStart+bytesMoved);
-            if (currentNode->size > size) {
-                //  split
-                size_t freeSpace = currentNode->size - (size + 32);
-                currentNode->is_free = TAKEN;
+            if (currentNode->size > (size+sizeof(node_t))) {
+                size_t freeSpace = currentNode->size - sizeof(node_t) - size;
                 currentNode->size = size;
-                node_t* nextNode = (node_t*)(incrimentableArenaStart+size+32+8);
+                currentNode->is_free = TAKEN;
+                node_t* nextNode;
+                nextNode = (node_t*) (((char*)currentNode) + size + sizeof(node_t));
                 nextNode->size = freeSpace;
                 nextNode->is_free = FREE;
-                nextNode->bwd = (struct __node_t *) &currentNode;
-                currentNode->fwd = &nextNode;
-                bytesMoved += (sizeof(node_t)+size);
+                nextNode->bwd = (struct __node_t*) currentNode;
+                nextNode->fwd = NULL;
+                currentNode->fwd = (struct __node_t*) nextNode;
+                currentNode->bwd = (struct __node_t*) previousNode;
+
+            } else if ((currentNode->size)<(size)) {
+                statusno = ERR_OUT_OF_MEMORY;
+                return NULL;
             } else {
-                // don't split
                 currentNode->is_free = TAKEN;
-                bytesMoved += 32;
             }
+            bytesMoved+=sizeof(node_t);
             hasSpace = 1;
         } else {
             bytesMoved += (sizeof(node_t) + currentNode->size);
+            if (bytesMoved >= totalMemorySize){
+                break;
+            }
+            previousNode = currentNode;
             currentNode = currentNode->fwd;
         }
     }
@@ -109,32 +118,37 @@ extern void* walloc(size_t size){
         statusno = ERR_OUT_OF_MEMORY;
         return NULL;
     }
-    printf("   Allocation starts at %p\n", incrimentableArenaStart+bytesMoved);
-    return (void*) (incrimentableArenaStart+=bytesMoved);
+    incrimentableArenaStart = ((char*)currentNode)+sizeof(node_t);
+    printf("   %p is the location of the allocated chunk!\n", incrimentableArenaStart);
+    return (void*) incrimentableArenaStart;
 
 }
 
 extern void wfree(void *ptr){
-    printf("   supplied pointer %p\n", ptr);
-    node_t* nodeOfPointer = (node_t*) (((char*) ptr) - 32);
-    printf("   accessing chunk header at %p\n", nodeOfPointer);
-    printf("   chunk of size of %d\n", (int)nodeOfPointer->size);
-    if (nodeOfPointer->fwd != NULL && nodeOfPointer->fwd->is_free) {
-        printf(" Adding forward Node to the current node!\n");
-        node_t* fwdNode = nodeOfPointer->fwd;
-        nodeOfPointer->size += (32 + fwdNode->size);
-        nodeOfPointer->fwd = nodeOfPointer->fwd;
-        nodeOfPointer->is_free = FREE;
+    if (ptr == NULL) {
+        statusno = ERR_BAD_ARGUMENTS;
     }
-    if (nodeOfPointer->bwd != NULL && nodeOfPointer->bwd->is_free) {
+    printf("   supplied pointer %p\n", ptr);
+    node_t* nodeOfPointer = (node_t*) (((char*) ptr) - sizeof(node_t));
+    printf("   accessing chunk header at %p\n", nodeOfPointer);
+    nodeOfPointer->is_free = FREE;
+    while (nodeOfPointer->fwd != NULL && nodeOfPointer->fwd->is_free) {
+        printf("   Adding forward Node to the current node!\n");
+        node_t* fwdNode = nodeOfPointer->fwd;
+        nodeOfPointer->size += (sizeof(node_t) + fwdNode->size);
+        nodeOfPointer->fwd = fwdNode->fwd;
+        fwdNode->bwd = NULL;
+        fwdNode->fwd = NULL;
+    }
+    while (nodeOfPointer->bwd != NULL && nodeOfPointer->bwd->is_free) {
         printf("   Adding current node to the backwards node!\n");
         node_t *bwdNode = nodeOfPointer->bwd;
-        bwdNode->size += (32 + nodeOfPointer->size);
+        bwdNode->size += (sizeof(node_t) + nodeOfPointer->size);
+        if (bwdNode->size > (totalMemorySize-sizeof(node_t))) {
+            bwdNode->size = totalMemorySize-sizeof(node_t);
+        }
         bwdNode->fwd = nodeOfPointer->fwd;
-    }
-
-    if (!nodeOfPointer->is_free) {
-        nodeOfPointer->is_free = FREE;
+        nodeOfPointer = bwdNode;
     }
 }
 
